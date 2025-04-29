@@ -29,13 +29,13 @@ const PgpVerifier: React.FC = () => {
 			const goodMatch = raw.match(/Good signature from \"(.+?)\"/);
 			if (goodMatch) {
 				summary = `Valid signature from ${goodMatch[1]}`;
-				icon = <CheckCircleIcon style={{ width: 16, height: 16 }} className="text-green-500 flex-shrink-0" />;
+				icon = <CheckCircleIcon className="h-4 w-4 text-green-500 flex-shrink-0" />;
 			} else if (raw.includes('not certified with a trusted signature')) {
 				summary = 'Signature valid, but not trusted. You must verify the key fingerprint manually.';
-				icon = <ExclamationTriangleIcon style={{ width: 16, height: 16 }} className="text-yellow-500 flex-shrink-0" />;
+				icon = <ExclamationTriangleIcon className="h-4 w-4 text-yellow-500 flex-shrink-0" />;
 			} else if (raw.includes('BAD signature')) {
 				summary = 'Bad signature!';
-				icon = <XCircleIcon style={{ width: 16, height: 16 }} className="text-red-500 flex-shrink-0" />;
+				icon = <XCircleIcon className="h-4 w-4 text-red-500 flex-shrink-0" />;
 			} else {
 				summary = raw;
 				icon = null;
