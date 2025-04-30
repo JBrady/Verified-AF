@@ -8,6 +8,8 @@ const ChecksumVerifier: React.FC = () => {
   const [output, setOutput] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusIcon, setStatusIcon] = useState<JSX.Element | null>(null);
+  const [calculatedHash, setCalculatedHash] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) setFile(e.target.files[0]);
@@ -17,10 +19,12 @@ const ChecksumVerifier: React.FC = () => {
     setError(null);
     setOutput(null);
     setStatusIcon(null);
-    if (!file) {
-      setError('Please select a file to hash');
+    setCalculatedHash(null);
+    if (!file || !expectedChecksum.trim()) {
+      setError('File and expected checksum are required');
       return;
     }
+    setIsLoading(true);
     try {
       const buffer = await file.arrayBuffer();
       const hashBuffer = await crypto.subtle.digest(algorithm, buffer);
@@ -28,6 +32,7 @@ const ChecksumVerifier: React.FC = () => {
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       const expected = expectedChecksum.trim().toLowerCase();
       const calculated = hashHex.toLowerCase();
+      setCalculatedHash(calculated);
       let icon: JSX.Element | null = null;
       let summary: string;
       if (expected === calculated) {
@@ -41,33 +46,40 @@ const ChecksumVerifier: React.FC = () => {
       setStatusIcon(icon);
     } catch (e: any) {
       setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold">Checksum Verifier</h2>
-      <input type="file" onChange={handleFileChange} className="my-2" />
+      <input type="file" onChange={handleFileChange} disabled={isLoading} className="my-2 disabled:opacity-50 disabled:cursor-not-allowed" />
+      {!file && !isLoading && <p className="text-sm text-yellow-600">File required</p>}
       <input
         type="text"
         placeholder="Expected checksum"
         value={expectedChecksum}
         onChange={(e) => setExpectedChecksum(e.currentTarget.value)}
-        className="border p-1 my-2 w-full"
+        disabled={isLoading}
+        className="border p-1 my-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
       />
+      {!expectedChecksum.trim() && !isLoading && <p className="text-sm text-yellow-600">Checksum required</p>}
       <select
         value={algorithm}
         onChange={(e) => setAlgorithm(e.target.value as 'SHA-256' | 'SHA-512')}
-        className="border p-1 my-2 w-full"
+        disabled={isLoading}
+        className="border p-1 my-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <option value="SHA-256">SHA-256</option>
         <option value="SHA-512">SHA-512</option>
       </select>
       <button
         onClick={handleVerify}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
+        disabled={isLoading || !file || !expectedChecksum.trim()}
+        className={`px-4 py-2 rounded ${isLoading || !file || !expectedChecksum.trim() ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-blue-500 text-white'}`}
       >
-        Run Verification
+        {isLoading ? 'Verifying...' : 'Run Verification'}
       </button>
       {output && (
         <div className="mt-4">
@@ -78,8 +90,23 @@ const ChecksumVerifier: React.FC = () => {
           </div>
         </div>
       )}
-      {error && <pre className="mt-4 bg-red-100 p-2 text-sm text-red-600">{error}</pre>}
+      {error && <pre className="mt-4 bg-red-100 p-2 text-sm text-red-600">❌ {error}</pre>}
+      {calculatedHash && (
+        <div className="mt-2">
+          <span className="block text-sm font-semibold">Calculated Hash:</span>
+          <div className="flex items-center">
+            <code className="bg-gray-100 p-1 text-sm break-all">{calculatedHash}</code>
+            <button
+              onClick={() => navigator.clipboard.writeText(calculatedHash)}
+              className="ml-2 text-blue-500 underline text-sm"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
 export default ChecksumVerifier;
