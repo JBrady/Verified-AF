@@ -32,3 +32,6 @@ src-tauri/target/
 
 # Ignore VSCode workspace file
 verified-af-wsl.code-workspace
+
+# Project Structure file
+PROJECT_STRUCTURE.md
