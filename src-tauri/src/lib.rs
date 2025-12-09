@@ -31,6 +31,7 @@ fn verify_pgp_signature(signature_path: String, file_path: String) -> Result<Str
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![greet, verify_pgp_signature])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
