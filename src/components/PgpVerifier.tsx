@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
 import { CheckCircleIcon, ExclamationTriangleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
 const PgpVerifier: React.FC = () => {
@@ -9,6 +10,33 @@ const PgpVerifier: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [statusIcon, setStatusIcon] = useState<JSX.Element | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const selectSignatureFile = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: 'Signatures', extensions: ['sig', 'asc', 'gpg'] }],
+      });
+      if (selected && typeof selected === 'string') {
+        setSignatureFilePath(selected);
+      }
+    } catch (err) {
+      console.error('Failed to open dialog:', err);
+    }
+  };
+
+  const selectMainFile = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+      });
+      if (selected && typeof selected === 'string') {
+        setMainFilePath(selected);
+      }
+    } catch (err) {
+      console.error('Failed to open dialog:', err);
+    }
+  };
 
   const handleVerify = async () => {
     setError(null);
@@ -61,35 +89,59 @@ const PgpVerifier: React.FC = () => {
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold">PGP Verifier</h2>
-      <input
-        type="text"
-        placeholder="Signature file path"
-        value={signatureFilePath}
-        onChange={(e) => setSignatureFilePath(e.currentTarget.value)}
-        disabled={isLoading}
-        className="border p-1 my-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
-      />
-      {!signatureFilePath && !isLoading && (
-        <p className="text-sm text-yellow-600">Signature path required</p>
-      )}
-      <input
-        type="text"
-        placeholder="Main file path"
-        value={mainFilePath}
-        onChange={(e) => setMainFilePath(e.currentTarget.value)}
-        disabled={isLoading}
-        className="border p-1 my-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
-      />
-      {!mainFilePath && !isLoading && (
-        <p className="text-sm text-yellow-600">Main file path required</p>
-      )}
+
+      <div className="my-2">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Signature file path"
+            value={signatureFilePath}
+            readOnly
+            className="border p-1 w-full bg-gray-100 cursor-default"
+          />
+          <button
+            onClick={selectSignatureFile}
+            disabled={isLoading}
+            className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded border text-sm"
+          >
+            Browse
+          </button>
+        </div>
+        {!signatureFilePath && !isLoading && (
+          <p className="text-sm text-yellow-600 mt-1">Signature path required</p>
+        )}
+      </div>
+
+      <div className="my-2">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Main file path"
+            value={mainFilePath}
+            readOnly
+            className="border p-1 w-full bg-gray-100 cursor-default"
+          />
+          <button
+            onClick={selectMainFile}
+            disabled={isLoading}
+            className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded border text-sm"
+          >
+            Browse
+          </button>
+        </div>
+        {!mainFilePath && !isLoading && (
+          <p className="text-sm text-yellow-600 mt-1">Main file path required</p>
+        )}
+      </div>
+
       <button
         onClick={handleVerify}
         disabled={isLoading || !signatureFilePath || !mainFilePath}
-        className={`px-4 py-2 rounded ${isLoading || !signatureFilePath || !mainFilePath ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-blue-500 text-white'}`}
+        className={`mt-2 px-4 py-2 rounded ${isLoading || !signatureFilePath || !mainFilePath ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-blue-500 text-white'}`}
       >
         {isLoading ? 'Verifying...' : 'Run Verification'}
       </button>
+
       {output && (
         <div className="mt-4">
           <label className="block font-bold">Result</label>
